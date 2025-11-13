@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useCart } from '../contexts/CartContext'
 import './ProductCard.css'
 
-function ProductCard({ name, author, price, description, image }) {
-  const [quantity, setQuantity] = useState(0)
+function ProductCard({ id, name, author, price, description, image }) {
+  const { addToCart, items } = useCart()
+  
+  const cartItem = items.find(item => item.id === id)
+  const quantity = cartItem ? cartItem.quantity : 0
 
   const handleAddToCart = () => {
-    setQuantity(quantity + 1)
+    addToCart({ id, name, author, price, description, image })
   }
 
   return (
@@ -17,11 +20,11 @@ function ProductCard({ name, author, price, description, image }) {
         <p className="product-description">{description}</p>
         <p className="product-price">{price} ₽</p>
         <button onClick={handleAddToCart} className="add-to-cart-btn">
-          Добавить в корзину
+          В корзину
         </button>
         {quantity > 0 && (
           <div className="quantity-display">
-            Количество: {quantity}
+            В корзине: {quantity}
           </div>
         )}
       </div>
