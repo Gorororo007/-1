@@ -91,6 +91,11 @@ function Navigation() {
               </div>
             )}
           </div>
+          {user && user.role_name === 'admin' && (
+            <NavLink to="/admin" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              Панель продавца
+            </NavLink>
+          )}
           {user ? (
             <button onClick={handleLogout} className="logout-button" aria-label="Выйти">
               Выйти

@@ -1,0 +1,113 @@
+.admin-panel-wrapper {
+  min-height: 100vh;
+  background: var(--bg-primary, #f5f5f5);
+}
+
+.admin-panel {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border-color, #ddd);
+}
+
+.admin-header h1 {
+  margin: 0;
+  color: var(--color-primary);
+}
+
+.admin-user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.admin-user-info span {
+  color: var(--text-secondary);
+}
+
+.btn-logout {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-logout:hover {
+  background: #c82333;
+}
+
+.admin-nav {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color, #ddd);
+}
+
+.admin-nav button {
+  background: none;
+  border: none;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.admin-nav button:hover {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.admin-nav button.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  font-weight: bold;
+}
+
+.admin-content {
+  background: var(--card-bg, white);
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 8px;
+  padding: 2rem;
+  min-height: 400px;
+}
+
+.admin-access-denied {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.admin-access-denied h2 {
+  color: #dc3545;
+  margin-bottom: 1rem;
+}
+
+.admin-access-denied p {
+  margin-bottom: 2rem;
+  color: var(--text-secondary);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: var(--color-secondary);
+}
+

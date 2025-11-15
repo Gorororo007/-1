@@ -1,72 +1,152 @@
-import { createContext, useContext, useReducer } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
+import { getCart, addToCart as apiAddToCart, removeFromCart as apiRemoveFromCart, updateCartItem, clearCart as apiClearCart } from '../api/cart'
+import { useAuth } from './AuthContext'
 
 const CartContext = createContext()
 
-const cartReducer = (state, action) => {
-  switch (action.type) {
-    case 'ADD_TO_CART':
-      const existingItem = state.items.find(item => item.id === action.payload.id)
-      if (existingItem) {
-        return {
-          ...state,
-          items: state.items.map(item =>
-            item.id === action.payload.id
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-          )
-        }
-      }
-      return {
-        ...state,
-        items: [...state.items, { ...action.payload, quantity: 1 }]
-      }
-    case 'REMOVE_FROM_CART':
-      return {
-        ...state,
-        items: state.items.filter(item => item.id !== action.payload)
-      }
-    case 'CLEAR_CART':
-      return {
-        ...state,
-        items: []
-      }
-    default:
-      return state
-  }
-}
-
 export const CartProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(cartReducer, { items: [] })
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const { user } = useAuth()
 
-  const addToCart = (product) => {
-    dispatch({ type: 'ADD_TO_CART', payload: product })
+  // загрузка корзины при изменении юзера
+  useEffect(() => {
+    if (user?.user_id) {
+      loadCart()
+    } else {
+      setItems([])
+      setError(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.user_id])
+
+  const loadCart = async () => {
+    if (!user?.user_id) {
+      setItems([])
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await getCart(user.user_id)
+      // убеждаемся, что data - это массив
+      if (Array.isArray(data)) {
+        setItems(data)
+      } else {
+        console.error('Ожидался массив товаров корзины, получено:', data)
+        setItems([])
+        setError('Неверный формат данных корзины')
+      }
+    } catch (err) {
+      setError(err.message || 'Ошибка загрузки корзины')
+      console.error('Ошибка загрузки корзины:', err)
+      setItems([]) // устанавливаем пустой массив при ошибке
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const removeFromCart = (productId) => {
-    dispatch({ type: 'REMOVE_FROM_CART', payload: productId })
+  const addToCart = async (product) => {
+    if (!user?.user_id) {
+      setError('Необходимо войти в систему')
+      return { success: false, error: 'Необходимо войти в систему' }
+    }
+
+    try {
+      setError(null)
+      await apiAddToCart(user.user_id, product.product_id || product.id, 1)
+      await loadCart()
+      return { success: true }
+    } catch (err) {
+      setError(err.message)
+      return { success: false, error: err.message }
+    }
   }
 
-  const clearCart = () => {
-    dispatch({ type: 'CLEAR_CART' })
+  const removeFromCart = async (cartId) => {
+    try {
+      setError(null)
+      await apiRemoveFromCart(cartId)
+      await loadCart()
+      return { success: true }
+    } catch (err) {
+      setError(err.message)
+      return { success: false, error: err.message }
+    }
+  }
+
+  const updateQuantity = async (cartId, quantity) => {
+    try {
+      setError(null)
+      await updateCartItem(cartId, quantity)
+      await loadCart()
+      return { success: true }
+    } catch (err) {
+      setError(err.message)
+      return { success: false, error: err.message }
+    }
+  }
+
+  const clearCart = async () => {
+    if (!user?.user_id) return
+
+    try {
+      setError(null)
+      await apiClearCart(user.user_id)
+      await loadCart()
+      return { success: true }
+    } catch (err) {
+      setError(err.message)
+      return { success: false, error: err.message }
+    }
   }
 
   const getTotalPrice = () => {
-    return state.items.reduce((total, item) => total + (item.price * item.quantity), 0)
+    if (!Array.isArray(items)) return 0
+    try {
+      return items.reduce((total, item) => {
+        if (!item) return total
+        // используем discounted_price если есть скидка, иначе обычную цену
+        const originalPrice = Number(item.price) || 0
+        const discountedPrice = item.discounted_price ? Number(item.discounted_price) : null
+        const price = (discountedPrice && discountedPrice < originalPrice) ? discountedPrice : originalPrice
+        const quantity = Number(item.quantity) || 0
+        return total + (price * quantity)
+      }, 0)
+    } catch (err) {
+      console.error('Ошибка вычисления общей стоимости корзины:', err)
+      return 0
+    }
   }
 
   const getTotalItems = () => {
-    return state.items.reduce((total, item) => total + item.quantity, 0)
+    if (!Array.isArray(items)) return 0
+    try {
+      return items.reduce((total, item) => {
+        if (!item) return total
+        return total + (Number(item.quantity) || 0)
+      }, 0)
+    } catch (err) {
+      console.error('Ошибка подсчета товаров в корзине:', err)
+      return 0
+    }
   }
 
   return (
     <CartContext.Provider
       value={{
-        items: state.items,
+        items,
         addToCart,
         removeFromCart,
+        updateQuantity,
         clearCart,
         getTotalPrice,
-        getTotalItems
+        getTotalItems,
+        loading,
+        error,
+        loadCart
       }}
     >
       {children}
@@ -77,7 +157,7 @@ export const CartProvider = ({ children }) => {
 export const useCart = () => {
   const context = useContext(CartContext)
   if (!context) {
-    throw new Error('useCart must be used within a CartProvider')
+    throw new Error('useCart должен использоваться внутри CartProvider')
   }
   return context
 }
